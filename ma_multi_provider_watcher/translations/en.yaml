@@ -1,0 +1,19 @@
+configuration:
+  providers:
+    name: "Provider Sources"
+    description: >-
+      List of provider sources. Supported formats:
+      - GitHub URL: https://github.com/sproft/ytmusic-free-provider
+      - Tag/branch/ref: https://github.com/owner/repo@v1.2.0 or #main
+      - Target specific provider in repo: https://github.com/owner/server:discord_presence
+      - Subpath in repo: https://github.com/owner/server//music_assistant/providers/discord_presence
+      - Local folder: /share/custom_providers/discord_presence
+  auto_update:
+    name: "Auto Update Providers"
+    description: >-
+      When enabled, periodically checks Git repositories for updates and
+      re-installs them automatically when newer commits are found.
+  update_interval_hours:
+    name: "Update Check Interval (Hours)"
+    description: >-
+      How often to check Git repositories for updates, in hours. Minimum 1 hour. Default 24.
