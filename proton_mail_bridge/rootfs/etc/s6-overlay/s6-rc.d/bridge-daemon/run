@@ -10,13 +10,14 @@ if ! bashio::config.true 'auto_start_daemon'; then
 fi
 
 LOG_LEVEL=$(bashio::config 'log_level')
-ACCOUNTS_FILE="/data/protonmail/data/bridge-v3/accounts.json"
-
 has_account() {
-    if [ -f "$ACCOUNTS_FILE" ] && jq -e 'length > 0' "$ACCOUNTS_FILE" >/dev/null 2>&1; then
+    if [ -f "/data/protonmail/config/bridge-v3/vault.enc" ]; then
         return 0
     fi
-    if [ -d "/data/pass/proton-bridge" ] || [ -d "/data/pass/protonmail" ]; then
+    if find /data/pass -type f -name "*.gpg" 2>/dev/null | grep -q .; then
+        return 0
+    fi
+    if [ -d "/data/protonmail/data/bridge-v3" ] && [ "$(ls -A /data/protonmail/data/bridge-v3 2>/dev/null)" ]; then
         return 0
     fi
     return 1

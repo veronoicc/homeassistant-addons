@@ -27,7 +27,10 @@ get_option() {
 }
 
 is_daemon_running() {
-    pgrep -f "proton-bridge.*--noninteractive" >/dev/null 2>&1
+    if s6-svstat /run/service/bridge-daemon 2>/dev/null | grep -q "^up "; then
+        return 0
+    fi
+    pgrep -f "proton-bridge.*--noninteractive" >/dev/null 2>&1 || pgrep -f "bridge.*--noninteractive" >/dev/null 2>&1
 }
 
 pause_daemon() {
@@ -46,13 +49,12 @@ pause_daemon() {
 
 resume_daemon() {
     echo -e "${COLOR_GREEN}Resuming background bridge daemon...${COLOR_RESET}"
+    if [ -d /run/service/bridge-daemon ]; then
+        rm -f /run/service/bridge-daemon/down 2>/dev/null || true
+        s6-svc -u /run/service/bridge-daemon 2>/dev/null || true
+    fi
     if command -v s6-rc >/dev/null 2>&1; then
         s6-rc -u change bridge-daemon 2>/dev/null || true
-    fi
-    if [ -d /run/service/bridge-daemon ]; then
-        s6-svc -u /run/service/bridge-daemon 2>/dev/null || true
-    elif [ -d /var/run/s6/services/bridge-daemon ]; then
-        s6-svc -u /var/run/s6/services/bridge-daemon 2>/dev/null || true
     fi
 }
 
@@ -72,10 +74,15 @@ sync_certificate() {
 }
 
 count_accounts() {
-    local acc_file="/data/protonmail/data/bridge-v3/accounts.json"
-    if [ -f "$acc_file" ]; then
-        jq -r 'length' "$acc_file" 2>/dev/null || echo "0"
-    elif [ -d "/data/pass/proton-bridge" ]; then
+    if [ -f "/data/protonmail/config/bridge-v3/vault.enc" ]; then
+        local gpg_count
+        gpg_count=$(find /data/pass -type f -name "*.gpg" 2>/dev/null | wc -l)
+        if [ "$gpg_count" -gt 0 ]; then
+            echo "$gpg_count"
+        else
+            echo "1"
+        fi
+    elif find /data/pass -type f -name "*.gpg" 2>/dev/null | grep -q .; then
         echo ">=1"
     else
         echo "0"
