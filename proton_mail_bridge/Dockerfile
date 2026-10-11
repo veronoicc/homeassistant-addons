@@ -1,3 +1,5 @@
+ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
+
 # Builder stage
 FROM golang:1.23-alpine AS builder
 
@@ -19,8 +21,6 @@ WORKDIR /build
 RUN git clone --depth 1 --branch "${BRIDGE_VERSION}" https://github.com/ProtonMail/proton-bridge.git . \
     && CGO_CFLAGS="-D_LARGEFILE64_SOURCE" make build-nogui
 
-# Runtime stage
-ARG BUILD_FROM=ghcr.io/home-assistant/base:latest
 FROM ${BUILD_FROM}
 
 RUN apk add --no-cache \
