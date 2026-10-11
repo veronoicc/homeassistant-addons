@@ -43,9 +43,9 @@ RUN ln -sf /usr/local/bin/proton-bridge /usr/local/bin/bridge
 
 COPY rootfs/ /
 
-RUN chmod +x /etc/s6-overlay/s6-rc.d/00-init-bridge/up \
-    && chmod +x /etc/s6-overlay/s6-rc.d/*/run \
-    && chmod +x /usr/local/bin/bridge-manager
+RUN chmod +x /usr/local/bin/init-bridge \
+    && chmod +x /usr/local/bin/bridge-manager \
+    && chmod +x /etc/s6-overlay/s6-rc.d/*/run
 
 LABEL \
     io.hass.name="Proton Mail Bridge" \
