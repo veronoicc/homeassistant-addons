@@ -1,0 +1,8 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Proton Mail Bridge
+# Ingress Web Terminal (ttyd)
+# ==============================================================================
+
+bashio::log.info "Starting web terminal on 127.0.0.1:7681..."
+exec ttyd -p 7681 -i 127.0.0.1 -W -t fontSize=14 -t theme='{"background": "#1e1e2e", "foreground": "#cdd6f4"}' /usr/local/bin/bridge-manager

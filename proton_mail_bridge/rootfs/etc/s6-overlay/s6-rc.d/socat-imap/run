@@ -1,0 +1,11 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Proton Mail Bridge
+# IMAP port forwarder (0.0.0.0:PORT -> 127.0.0.1:1143)
+# ==============================================================================
+
+PORT=$(bashio::config 'imap_port')
+PORT=${PORT:-1143}
+
+bashio::log.info "Binding IMAP forwarder on 0.0.0.0:${PORT} -> 127.0.0.1:1143"
+exec socat TCP-LISTEN:"${PORT}",fork,reuseaddr TCP:127.0.0.1:1143

@@ -1,0 +1,11 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Proton Mail Bridge
+# SMTP port forwarder (0.0.0.0:PORT -> 127.0.0.1:1025)
+# ==============================================================================
+
+PORT=$(bashio::config 'smtp_port')
+PORT=${PORT:-1025}
+
+bashio::log.info "Binding SMTP forwarder on 0.0.0.0:${PORT} -> 127.0.0.1:1025"
+exec socat TCP-LISTEN:"${PORT}",fork,reuseaddr TCP:127.0.0.1:1025

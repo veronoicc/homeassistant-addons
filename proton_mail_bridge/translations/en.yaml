@@ -1,0 +1,19 @@
+configuration:
+  imap_port:
+    name: IMAP Port
+    description: Port on which the local IMAP server is exposed to other devices and add-ons.
+  smtp_port:
+    name: SMTP Port
+    description: Port on which the local SMTP server is exposed to other devices and add-ons.
+  log_level:
+    name: Log Level
+    description: Logging level for the Proton Mail Bridge process.
+  auto_start_daemon:
+    name: Auto-start Daemon
+    description: Automatically start the background Bridge daemon on container boot.
+  copy_cert_to_ssl:
+    name: Export Certificate to /ssl
+    description: Copy the Bridge TLS certificate to /ssl/proton-bridge-cert.pem for use by other clients.
+network:
+  1143/tcp: IMAP Server
+  1025/tcp: SMTP Server

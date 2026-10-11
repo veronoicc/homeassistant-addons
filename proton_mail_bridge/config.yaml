@@ -1,0 +1,36 @@
+name: "Proton Mail Bridge"
+description: "Proton Mail Bridge running headless IMAP and SMTP servers with Ingress web management terminal."
+version: "1.0.0"
+slug: proton_mail_bridge
+url: "https://github.com/veronoicc/homeassistant-addons/tree/main/proton_mail_bridge"
+arch:
+  - aarch64
+  - amd64
+init: false
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_icon: "mdi:email-lock"
+panel_title: "Proton Bridge"
+panel_admin: true
+ports:
+  1143/tcp: 1143
+  1025/tcp: 1025
+ports_description:
+  1143/tcp: "IMAP Server"
+  1025/tcp: "SMTP Server"
+map:
+  - ssl:rw
+apparmor: true
+options:
+  imap_port: 1143
+  smtp_port: 1025
+  log_level: info
+  auto_start_daemon: true
+  copy_cert_to_ssl: true
+schema:
+  imap_port: port
+  smtp_port: port
+  log_level: list(debug|info|warning|error)
+  auto_start_daemon: bool
+  copy_cert_to_ssl: bool

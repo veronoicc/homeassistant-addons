@@ -1,0 +1,187 @@
+#!/usr/bin/env bash
+set -e
+
+COLOR_RESET="\033[0m"
+COLOR_BOLD="\033[1m"
+COLOR_CYAN="\033[36m"
+COLOR_GREEN="\033[32m"
+COLOR_YELLOW="\033[33m"
+COLOR_RED="\033[31m"
+COLOR_MAGENTA="\033[35m"
+
+CERT_PATH="/data/protonmail/data/bridge-v3/cert.pem"
+SSL_DEST="/ssl/proton-bridge-cert.pem"
+
+get_option() {
+    local key="$1"
+    local default_val="$2"
+    if [ -f /data/options.json ]; then
+        local val
+        val=$(jq -r ".${key} // empty" /data/options.json 2>/dev/null || true)
+        if [ -n "$val" ] && [ "$val" != "null" ]; then
+            echo "$val"
+            return
+        fi
+    fi
+    echo "$default_val"
+}
+
+is_daemon_running() {
+    pgrep -f "proton-bridge.*--noninteractive" >/dev/null 2>&1
+}
+
+pause_daemon() {
+    echo -e "${COLOR_YELLOW}Pausing background bridge daemon...${COLOR_RESET}"
+    if [ -d /run/service/bridge-daemon ]; then
+        s6-svc -d /run/service/bridge-daemon 2>/dev/null || true
+    elif [ -d /var/run/s6/services/bridge-daemon ]; then
+        s6-svc -d /var/run/s6/services/bridge-daemon 2>/dev/null || true
+    fi
+    if command -v s6-rc >/dev/null 2>&1; then
+        s6-rc -d change bridge-daemon 2>/dev/null || true
+    fi
+    pkill -TERM -f "proton-bridge.*--noninteractive" 2>/dev/null || true
+    sleep 1
+}
+
+resume_daemon() {
+    echo -e "${COLOR_GREEN}Resuming background bridge daemon...${COLOR_RESET}"
+    if command -v s6-rc >/dev/null 2>&1; then
+        s6-rc -u change bridge-daemon 2>/dev/null || true
+    fi
+    if [ -d /run/service/bridge-daemon ]; then
+        s6-svc -u /run/service/bridge-daemon 2>/dev/null || true
+    elif [ -d /var/run/s6/services/bridge-daemon ]; then
+        s6-svc -u /var/run/s6/services/bridge-daemon 2>/dev/null || true
+    fi
+}
+
+restart_daemon() {
+    echo -e "${COLOR_YELLOW}Restarting bridge daemon...${COLOR_RESET}"
+    pause_daemon
+    resume_daemon
+    echo -e "${COLOR_GREEN}Daemon restarted.${COLOR_RESET}"
+}
+
+sync_certificate() {
+    if [ -f "$CERT_PATH" ]; then
+        mkdir -p /ssl
+        cp "$CERT_PATH" "$SSL_DEST"
+        echo -e "${COLOR_GREEN}Exported certificate to ${SSL_DEST}${COLOR_RESET}"
+    fi
+}
+
+count_accounts() {
+    local acc_file="/data/protonmail/data/bridge-v3/accounts.json"
+    if [ -f "$acc_file" ]; then
+        jq -r 'length' "$acc_file" 2>/dev/null || echo "0"
+    elif [ -d "/data/pass/proton-bridge" ]; then
+        echo ">=1"
+    else
+        echo "0"
+    fi
+}
+
+header() {
+    clear
+    local imap_port
+    local smtp_port
+    imap_port=$(get_option "imap_port" "1143")
+    smtp_port=$(get_option "smtp_port" "1025")
+    local acc_count
+    acc_count=$(count_accounts)
+
+    echo -e "${COLOR_CYAN}${COLOR_BOLD}====================================================${COLOR_RESET}"
+    echo -e "${COLOR_CYAN}${COLOR_BOLD}           Proton Mail Bridge Manager               ${COLOR_RESET}"
+    echo -e "${COLOR_CYAN}${COLOR_BOLD}====================================================${COLOR_RESET}"
+    if is_daemon_running; then
+        echo -e " Daemon Status : ${COLOR_GREEN}${COLOR_BOLD}RUNNING${COLOR_RESET}"
+    else
+        echo -e " Daemon Status : ${COLOR_RED}${COLOR_BOLD}STOPPED / IDLE${COLOR_RESET}"
+    fi
+    echo -e " Accounts      : ${COLOR_BOLD}${acc_count}${COLOR_RESET}"
+    echo -e " IMAP Port     : ${COLOR_BOLD}${imap_port}${COLOR_RESET} (forwarded to 127.0.0.1:1143)"
+    echo -e " SMTP Port     : ${COLOR_BOLD}${smtp_port}${COLOR_RESET} (forwarded to 127.0.0.1:1025)"
+    echo -e "${COLOR_CYAN}----------------------------------------------------${COLOR_RESET}"
+}
+
+menu() {
+    while true; do
+        header
+        echo -e "${COLOR_BOLD}1)${COLOR_RESET} Log In (Add Proton Account)"
+        echo -e "${COLOR_BOLD}2)${COLOR_RESET} View Credentials & Connection Info"
+        echo -e "${COLOR_BOLD}3)${COLOR_RESET} Open Interactive Bridge CLI (>>> shell)"
+        echo -e "${COLOR_BOLD}4)${COLOR_RESET} View & Export TLS Certificate"
+        echo -e "${COLOR_BOLD}5)${COLOR_RESET} Restart Background Daemon"
+        echo -e "${COLOR_BOLD}6)${COLOR_RESET} Exit to Bash Shell"
+        echo -e "${COLOR_CYAN}----------------------------------------------------${COLOR_RESET}"
+        read -r -p "Select option [1-6]: " choice
+
+        case "$choice" in
+            1)
+                echo
+                pause_daemon
+                echo -e "${COLOR_CYAN}Starting interactive login...${COLOR_RESET}"
+                echo -e "${COLOR_YELLOW}Type 'login' at the '>>>' prompt to begin, then 'exit' when finished.${COLOR_RESET}"
+                echo
+                proton-bridge --cli || true
+                sync_certificate
+                resume_daemon
+                read -r -p "Press Enter to continue..."
+                ;;
+            2)
+                echo
+                pause_daemon
+                echo -e "${COLOR_CYAN}Retrieving account credentials...${COLOR_RESET}"
+                echo -e "${COLOR_YELLOW}Type 'info' (or 'list') at the prompt to view passwords, then 'exit'.${COLOR_RESET}"
+                echo
+                proton-bridge --cli || true
+                resume_daemon
+                read -r -p "Press Enter to continue..."
+                ;;
+            3)
+                echo
+                pause_daemon
+                echo -e "${COLOR_CYAN}Launching full Proton Bridge CLI...${COLOR_RESET}"
+                echo -e "${COLOR_YELLOW}Type 'help' for commands, 'exit' to return to manager.${COLOR_RESET}"
+                echo
+                proton-bridge --cli || true
+                sync_certificate
+                resume_daemon
+                read -r -p "Press Enter to continue..."
+                ;;
+            4)
+                echo
+                if [ -f "$CERT_PATH" ]; then
+                    echo -e "${COLOR_GREEN}Certificate found at: ${CERT_PATH}${COLOR_RESET}"
+                    echo -e "Fingerprint (SHA256):"
+                    openssl x509 -noout -fingerprint -sha256 -in "$CERT_PATH" 2>/dev/null || true
+                    echo
+                    echo -e "${COLOR_BOLD}Certificate contents:${COLOR_RESET}"
+                    cat "$CERT_PATH"
+                    sync_certificate
+                else
+                    echo -e "${COLOR_YELLOW}Certificate not generated yet.${COLOR_RESET}"
+                    echo "Log into an account first so Bridge can generate certificates."
+                fi
+                echo
+                read -r -p "Press Enter to continue..."
+                ;;
+            5)
+                echo
+                restart_daemon
+                read -r -p "Press Enter to continue..."
+                ;;
+            6)
+                echo -e "${COLOR_GREEN}Dropping to bash shell. Type 'exit' to return.${COLOR_RESET}"
+                exec /bin/bash
+                ;;
+            *)
+                echo -e "${COLOR_RED}Invalid option.${COLOR_RESET}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+menu

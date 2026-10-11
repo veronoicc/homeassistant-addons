@@ -1,0 +1,35 @@
+#include <tunables/global>
+
+profile proton_mail_bridge flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  capability,
+  network,
+
+  / r,
+  /** r,
+  /data/** rw,
+  /ssl/** rw,
+  /run/** rw,
+  /var/run/** rw,
+  /tmp/** rw,
+  /dev/null rw,
+  /dev/zero rw,
+  /dev/urandom r,
+  /dev/ptmx rw,
+  /dev/pts/** rw,
+
+  # Execution
+  /init ix,
+  /package/** rx,
+  /command/** rx,
+  /etc/s6-overlay/** rx,
+  /usr/local/bin/** rx,
+  /usr/bin/** rx,
+  /bin/** rx,
+  /usr/sbin/** rx,
+  /sbin/** rx,
+
+  # Deny sensitive host paths
+  deny /proc/sysrq-trigger rwklx,
+}

@@ -21,3 +21,4 @@ Custom Home Assistant OS add-ons repository.
 | Add-on | Description |
 |---|---|
 | [**Music Assistant Multi-Provider Watcher**](ma_multi_provider_watcher/) | Automatically downloads, installs, and maintains custom Music Assistant providers (from multiple GitHub repos or local directories) across container restarts and updates. |
+| [**Proton Mail Bridge**](proton_mail_bridge/) | Proton Mail Bridge running headless IMAP and SMTP servers with Ingress web management terminal. |

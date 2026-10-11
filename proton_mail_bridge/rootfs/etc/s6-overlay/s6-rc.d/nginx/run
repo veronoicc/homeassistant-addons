@@ -1,0 +1,9 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Proton Mail Bridge
+# Ingress Nginx Proxy
+# ==============================================================================
+
+bashio::log.info "Starting Ingress Nginx proxy on port 8099..."
+rm -f /etc/nginx/http.d/default.conf
+exec nginx -g "daemon off;"

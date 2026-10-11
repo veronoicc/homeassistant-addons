@@ -1,0 +1,44 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Add-on: Proton Mail Bridge
+# Background daemon service
+# ==============================================================================
+
+if ! bashio::config.true 'auto_start_daemon'; then
+    bashio::log.info "auto_start_daemon is false. Bridge daemon idle. Start via Ingress manager."
+    exec sleep infinity
+fi
+
+LOG_LEVEL=$(bashio::config 'log_level')
+ACCOUNTS_FILE="/data/protonmail/data/bridge-v3/accounts.json"
+
+has_account() {
+    if [ -f "$ACCOUNTS_FILE" ] && jq -e 'length > 0' "$ACCOUNTS_FILE" >/dev/null 2>&1; then
+        return 0
+    fi
+    if [ -d "/data/pass/proton-bridge" ] || [ -d "/data/pass/protonmail" ]; then
+        return 0
+    fi
+    return 1
+}
+
+if ! has_account; then
+    bashio::log.warning "No Proton account configured yet."
+    bashio::log.info "Open 'Proton Bridge' in Home Assistant sidebar to log in."
+    while ! has_account; do
+        sleep 5
+    done
+    bashio::log.info "Proton account detected. Starting bridge daemon..."
+fi
+
+# Export TLS certificate if available and enabled
+if bashio::config.true 'copy_cert_to_ssl'; then
+    CERT_FILE="/data/protonmail/data/bridge-v3/cert.pem"
+    if [ -f "$CERT_FILE" ]; then
+        mkdir -p /ssl
+        cp "$CERT_FILE" /ssl/proton-bridge-cert.pem
+    fi
+fi
+
+bashio::log.info "Starting Proton Mail Bridge daemon (noninteractive, log-level: ${LOG_LEVEL:-info})..."
+exec proton-bridge --noninteractive --log-level "${LOG_LEVEL:-info}"
