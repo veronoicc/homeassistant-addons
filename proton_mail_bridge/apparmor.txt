@@ -3,32 +3,38 @@
 profile proton_mail_bridge flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
 
-  capability,
+  # Capabilities
+  file,
   network,
+  capability,
+  signal (send) set=(kill,term,int,hup,cont),
 
-  / r,
-  /** r,
+  # S6-Overlay
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /usr/local/bin/** ix,
+  /usr/sbin/** ix,
+  /sbin/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/s6-overlay/** rwix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # Bashio & temp
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
+  # Storage & devices
   /data/** rw,
   /ssl/** rw,
-  /run/** rw,
-  /var/run/** rw,
-  /tmp/** rw,
   /dev/null rw,
   /dev/zero rw,
   /dev/urandom r,
   /dev/ptmx rw,
   /dev/pts/** rw,
-
-  # Execution
-  /init ix,
-  /package/** rx,
-  /command/** rx,
-  /etc/s6-overlay/** rx,
-  /usr/local/bin/** rx,
-  /usr/bin/** rx,
-  /bin/** rx,
-  /usr/sbin/** rx,
-  /sbin/** rx,
 
   # Deny sensitive host paths
   deny /proc/sysrq-trigger rwklx,
