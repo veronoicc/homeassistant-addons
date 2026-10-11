@@ -27,6 +27,8 @@ FROM ghcr.io/home-assistant/${BUILD_ARCH}-base:latest
 
 RUN apk add --no-cache \
     libsecret \
+    libfido2 \
+    libcbor \
     pass \
     gnupg \
     socat \
