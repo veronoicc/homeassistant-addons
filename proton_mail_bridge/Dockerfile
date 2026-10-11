@@ -6,6 +6,7 @@ FROM golang:1.23-alpine AS builder
 ARG BRIDGE_VERSION=v3.27.0
 
 RUN apk add --no-cache \
+    bash \
     git \
     make \
     gcc \
