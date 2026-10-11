@@ -1,10 +1,11 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
 
 # Builder stage
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26-alpine AS builder
+
+ENV GOTOOLCHAIN=auto
 
 ARG BRIDGE_VERSION=v3.27.0
-
 RUN apk add --no-cache \
     bash \
     git \
